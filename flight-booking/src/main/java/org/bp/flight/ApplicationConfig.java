@@ -51,7 +51,7 @@ public class ApplicationConfig {
 	public Endpoint endpoint(Bus bus, FlightService flightService) {
 
 		EndpointImpl endpoint = new EndpointImpl(bus, flightService);
-		endpoint.publish("/service/fligth");
+		endpoint.publish("/service/flight");
 		
 		return endpoint;
 	}

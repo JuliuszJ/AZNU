@@ -30,7 +30,7 @@ public class FlightService {
 		
 	}
 	
-	public BookingInfo cancelBooking(int bookingId) {
+	public BookingInfo cancelBooking(int bookingId) throws Fault{
 		return null;
 	}
 
