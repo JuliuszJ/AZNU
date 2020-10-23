@@ -50,7 +50,8 @@ public class HotelBookingController {
         } catch (HotelFaultMsg e) {
             System.out.println("Expected exception: HotelFaultMsg has occurred.");
             System.out.println(e.toString());
-            return "bookRoom";
+            model.addAttribute("hotelFaultMsg", e);
+            return "fault";
         }		
 	}
 
