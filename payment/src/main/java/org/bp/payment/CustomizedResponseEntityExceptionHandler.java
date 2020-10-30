@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class CustomizedResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
 
   @ExceptionHandler(PaymentException.class)
-  public final ResponseEntity<ExceptionResponse> handleUserNotFoundException(PaymentException ex, WebRequest request) {
+  public final ResponseEntity<ExceptionResponse> handlePaymentException(PaymentException ex, WebRequest request) {
     ExceptionResponse exceptionResponse = new ExceptionResponse(new Date(), ex.getMessage(),
         request.getDescription(false));
     return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST);
