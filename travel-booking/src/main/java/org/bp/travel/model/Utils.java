@@ -1,6 +1,7 @@
 package org.bp.travel.model;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 public class Utils {
 	
@@ -52,4 +53,10 @@ public class Utils {
 		return paymentRequest;
 	}
 	
+	public static org.bp.payment.PaymentResponse createPaymentResponse() {
+		org.bp.payment.PaymentResponse paymentResponse = new org.bp.payment.PaymentResponse();
+		paymentResponse.setTransactionId(43434);
+		paymentResponse.setTransactionDate(OffsetDateTime.now());
+		return paymentResponse;
+	}
 }
