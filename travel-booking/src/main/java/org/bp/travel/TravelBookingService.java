@@ -18,6 +18,9 @@ import org.apache.camel.converter.jaxb.JaxbDataFormat;
 
 @Component
 public class TravelBookingService extends RouteBuilder {
+	
+	@org.springframework.beans.factory.annotation.Autowired
+	BookingIdentifierService bookingIdentifierService;	
 
 	@Override
 	public void configure() throws Exception {
@@ -46,6 +49,9 @@ public class TravelBookingService extends RouteBuilder {
 		
         from("direct:bookFlight").routeId("bookFlight")
         .log("bookFlight fired")
+        .saga()
+    	.propagation(SagaPropagation.MANDATORY)
+    	.compensation("direct:cancelFlight").option("travelBookingId", simple("${exchangeProperty.travelBookingId}"))        
         .process((exchange) -> 
         	{exchange.getMessage().setBody(
         			Utils.prepareFlightBookingRequest(exchange.getMessage().getBody(TravelBookingRequest.class))); 
@@ -53,12 +59,20 @@ public class TravelBookingService extends RouteBuilder {
         .marshal(jaxbFlight)
         .to("spring-ws:http://localhost:8081/soap-api/service/flight")
         .to("stream:out")
-        .unmarshal(jaxbFlight)								
+        .unmarshal(jaxbFlight)
+		.process((exchange) -> {
+			org.bp.flight.BookFligthResponse bookFlightResponse = exchange.getMessage().getBody(org.bp.flight.BookFligthResponse.class);
+			String travelBookingId=exchange.getProperty("travelBookingId", String.class);
+			bookingIdentifierService.assignFlightBookingId(travelBookingId, bookFlightResponse.getReturn().getId());
+		})        
         ;
         
         final JaxbDataFormat jaxbHotel = new JaxbDataFormat(org.bp.BookingInfo.class.getPackage().getName());
         from("direct:bookHotel").routeId("bookHotel")
-        .log("bookHotel fired")			
+        .log("bookHotel fired")
+        .saga()
+        	.propagation(SagaPropagation.MANDATORY)
+        	.compensation("direct:cancelHotel").option("travelBookingId", simple("${exchangeProperty.travelBookingId}"))
         .process((exchange) -> 
         	{exchange.getMessage().setBody(
         		Utils.prepareHotelBookingRequest(exchange.getMessage().getBody(TravelBookingRequest.class))); 
@@ -66,7 +80,13 @@ public class TravelBookingService extends RouteBuilder {
         .marshal(jaxbHotel)
         .to("spring-ws:http://localhost:8080/soap-api/service/hotel")
         .to("stream:out")
-        .unmarshal(jaxbHotel);
+        .unmarshal(jaxbHotel)
+        .process((exchange) -> {
+        	org.bp.BookingInfo bookhotelResponse = exchange.getMessage().getBody(org.bp.BookingInfo.class);
+        	String travelBookingId=exchange.getProperty("travelBookingId", String.class);
+        	bookingIdentifierService.assignHotelBookingId(travelBookingId, bookhotelResponse.getId());
+        })	
+        ;
 
         from("direct:payment").routeId("payment")
         .log("payment fired")
@@ -82,8 +102,10 @@ public class TravelBookingService extends RouteBuilder {
         		(exchange) -> {					
         			exchange.setProperty("paymentRequest", 
         					Utils.preparePaymentRequest(exchange.getMessage().getBody(TravelBookingRequest.class)));
+        			exchange.setProperty("travelBookingId", bookingIdentifierService.generateBookingId()); 
         		}
         		)
+        .saga()
         .multicast()
         .parallelProcessing()
         .aggregationStrategy(
@@ -129,6 +151,35 @@ public class TravelBookingService extends RouteBuilder {
         //.convertBodyTo(String.class)
         ;
 
+        from("direct:cancelHotel").routeId("cancelHotel")
+        .log("cancelHotel fired")
+        .process((exchange) -> {
+        	String travelBookingId=exchange.getMessage().getHeader("travelBookingId", String.class);
+        	int hotelBookingId=bookingIdentifierService.getHotelBookingId(travelBookingId);
+        	org.bp.CancelBookingRequest cancelHotelFlightRequest = new org.bp.CancelBookingRequest();
+        	cancelHotelFlightRequest.setBookingId(hotelBookingId);
+        	exchange.getMessage().setBody(cancelHotelFlightRequest); 
+        	} )
+        .marshal(jaxbHotel)
+        .to("spring-ws:http://localhost:8080/soap-api/service/hotel")
+        .to("stream:out")
+        .unmarshal(jaxbHotel)        
+        ;
+        
+		from("direct:cancelFlight").routeId("cancelFlight")
+		.log("cancelFlight fired")
+		.process((exchange) -> {
+			String travelBookingId=exchange.getMessage().getHeader("travelBookingId", String.class);
+			int flightBookingId=bookingIdentifierService.getFlightBookingId(travelBookingId);
+			org.bp.flight.CancelBooking cancelBookFlightRequest = new org.bp.flight.CancelBooking();
+			cancelBookFlightRequest.setArg0(flightBookingId);
+			exchange.getMessage().setBody(cancelBookFlightRequest); 
+			} )
+.marshal(jaxbFlight)
+.to("spring-ws:http://localhost:8081/soap-api/service/flight")
+.to("stream:out")
+.unmarshal(jaxbFlight)
+		;	        
         
 	}
 
