@@ -56,7 +56,22 @@
 		    <artifactId>camel-stream-starter</artifactId>
 			<version>${camel.version}</version>
 		</dependency>				
-		
+
+		<dependency>
+		    <groupId>org.webjars</groupId>
+		    <artifactId>swagger-ui</artifactId>
+		    <version>3.36.2</version>
+		</dependency>
+		<dependency>
+		  <groupId>org.webjars</groupId>
+		  <artifactId>webjars-locator</artifactId>
+		  <version>0.40</version>
+		</dependency>
+<dependency>
+    <groupId>org.apache.camel.springboot</groupId>
+    <artifactId>camel-kafka-starter</artifactId>
+    <version>${camel.version}</version>
+</dependency>		
 	</dependencies>
 
 	<build>
