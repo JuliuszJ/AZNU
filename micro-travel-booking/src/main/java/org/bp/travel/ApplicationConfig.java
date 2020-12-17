@@ -1,4 +1,4 @@
-package org.bp.travel.model;
+package org.bp.travel;
 
 
 
