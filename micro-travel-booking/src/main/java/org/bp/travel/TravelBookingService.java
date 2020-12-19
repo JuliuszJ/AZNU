@@ -106,7 +106,9 @@ public class TravelBookingService extends RouteBuilder {
 		
 		from("direct:bookTravel").routeId("bookTravel")
 		.log("bookTravel fired")
-		.setHeader("bookingTravelId", constant(bookingIdentifierService.getBookingIdentifier()))
+		.process((exchange) -> {
+				exchange.getMessage().setHeader("bookingTravelId", bookingIdentifierService.getBookingIdentifier());
+		})
 		.to("direct:TravelBookRequest")
 		.to("direct:bookRequester");
 
