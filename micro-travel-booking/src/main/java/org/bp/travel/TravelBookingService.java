@@ -73,7 +73,7 @@ public void configure() throws Exception {
         .marshal().json()
 		.to("stream:out")
 		.setHeader("serviceType", constant("hotel"))
-		.to("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer)
+		.to("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType)
 		.handled(true)
 		;	
 	}	
@@ -91,7 +91,7 @@ public void configure() throws Exception {
 	    .marshal().json()
 		.to("stream:out")
 		.setHeader("serviceType", constant("flight"))
-		.to("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer)
+		.to("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType)
 		.handled(true)
 		;	
 	}
@@ -138,13 +138,13 @@ public void configure() throws Exception {
 		from("direct:TravelBookRequest").routeId("TravelBookRequest")
 		.log("brokerTopic fired")
 		.marshal().json()
-		.to("kafka:TravelReqTopic?brokers="+ travelKafkaServer)
+		.to("kafka:TravelReqTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType)
 		;
 
 	}
 	
 	private void hotel() {
-		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer).routeId("bookHotel")
+		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("bookHotel")
 		.log("fired bookHotel")			
 		.unmarshal().json(JsonLibrary.Jackson, BookTravelRequest.class)
 		.process(
@@ -181,11 +181,11 @@ public void configure() throws Exception {
 			.to("direct:bookHotelCompensationAction")
 		.otherwise()
 			.setHeader("serviceType", constant("hotel"))
-			.to("kafka:BookingInfoTopic?brokers="+ travelKafkaServer)
+			.to("kafka:BookingInfoTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType)
 		.endChoice()		
 		;
 
-		from("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer).routeId("bookHotelCompensation")
+		from("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("bookHotelCompensation")
 		.log("fired bookHotelCompensation")	
 		.unmarshal().json(JsonLibrary.Jackson, ExceptionResponse.class)	
 		.choice()
@@ -207,7 +207,7 @@ public void configure() throws Exception {
 	}
 	
 	private void flight() {
-		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer).routeId("bookFlight")
+		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("bookFlight")
 		.log("fired bookFlight")	
 		.unmarshal().json(JsonLibrary.Jackson, BookTravelRequest.class)
 		.process(
@@ -245,11 +245,11 @@ public void configure() throws Exception {
 			.to("direct:bookFlightCompensationAction")
 		.otherwise()
 			.setHeader("serviceType", constant("flight"))
-			.to("kafka:BookingInfoTopic?brokers="+ travelKafkaServer)
+			.to("kafka:BookingInfoTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType)
 		.endChoice()
 		;
 		
-		from("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer).routeId("bookFlightCompensation")
+		from("kafka:TravelBookingFailTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("bookFlightCompensation")
 		.log("fired bookFlightCompensation")	
 		.unmarshal().json(JsonLibrary.Jackson, ExceptionResponse.class)	
         .choice()
@@ -271,7 +271,7 @@ public void configure() throws Exception {
 	}
 	
 	private void payment() {
-		from("kafka:BookingInfoTopic?brokers="+ travelKafkaServer).routeId("paymentBookingInfo")
+		from("kafka:BookingInfoTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("paymentBookingInfo")
 		.log("fired paymentBookingInfo")
 		.unmarshal().json(JsonLibrary.Jackson, BookingInfo.class)
 		.process(
@@ -288,7 +288,7 @@ public void configure() throws Exception {
 			.when(header("isReady").isEqualTo(true)).to("direct:finalizePayment")
 		    .endChoice();
 		
-		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer).routeId("paymentTravelReq")
+		from("kafka:TravelReqTopic?brokers="+ travelKafkaServer + "&groupId=" + travelServiceType).routeId("paymentTravelReq")
 		.log("fired paymentTravelReq")
 		.unmarshal().json(JsonLibrary.Jackson, BookTravelRequest.class) 
 		.process(
